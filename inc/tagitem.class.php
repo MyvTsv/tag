@@ -67,6 +67,7 @@ class PluginTagTagItem extends CommonDBRelation
                     UNIQUE INDEX `unicity` (`itemtype`, `items_id`, `plugin_tag_tags_id`)
                 ) ENGINE=InnoDB DEFAULT CHARSET={$default_charset} COLLATE={$default_collation} ROW_FORMAT=DYNAMIC;
 SQL;
+            /** @phpstan-ignore-next-line  */
             if (method_exists($DB, 'doQueryOrDie')) {
                 $DB->doQueryOrDie($query);
             } else {
@@ -486,7 +487,7 @@ SQL;
     public static function showMassiveActionsSubForm(MassiveAction $ma)
     {
 
-        $itemtypes = array_keys($ma->items);
+        $itemtypes = array_keys($ma->getItems());
         $itemtype = array_shift($itemtypes);
 
         switch ($ma->getAction()) {
@@ -507,7 +508,7 @@ SQL;
         $input = $ma->getInput();
         switch ($ma->getAction()) {
             case "addTag":
-                foreach ($ma->items as $itemtype => $items) {
+                foreach ($ma->getItems() as $itemtype => $items) {
                     $object = new $itemtype();
                     foreach ($items as $items_id) {
                         $object->fields['id'] = $items_id;
@@ -523,7 +524,7 @@ SQL;
                 break;
             case "removeTag":
                 $tagitem = new self();
-                foreach ($ma->items as $itemtype => $items) {
+                foreach ($ma->getItems() as $itemtype => $items) {
                     $object = new $itemtype();
                     foreach ($items as $items_id) {
                         if (

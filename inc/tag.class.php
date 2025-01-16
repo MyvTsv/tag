@@ -156,6 +156,7 @@ class PluginTagTag extends CommonDropdown
                     KEY `is_active` (`is_active`)
                 ) ENGINE=InnoDB DEFAULT CHARSET={$default_charset} COLLATE={$default_collation} ROW_FORMAT=DYNAMIC;
 SQL;
+            /** @phpstan-ignore-next-line */
             if (method_exists($DB, 'doQueryOrDie')) {
                 $DB->doQueryOrDie($query);
             } else {
@@ -241,21 +242,29 @@ SQL;
 
     public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0)
     {
-        $tab    = [];
-        $tab[2] = _n('Associated item', 'Associated items', 2); //Note : can add nb_element here
-        return $tab;
+        if (!$withtemplate) {
+            $nb = 0;
+            if ($item instanceof PluginTagTag) {
+                if ($_SESSION['glpishow_count_on_tabs']) {
+                    $nb = countElementsInTable(PluginTagTagItem::getTable(), ['plugin_tag_tags_id' => $item->getID()]);
+                }
+                return self::createTabEntry(
+                    _n('Associated item', 'Associated items', Session::getPluralNumber()),
+                    $nb
+                );
+            }
+        }
+        return '';
     }
 
     public static function displayTabContentForItem(CommonGLPI $item, $tabnum = 1, $withtemplate = 0)
     {
         switch ($item->getType()) {
-            case __CLASS__:
-                switch ($tabnum) {
-                    case 2:
-                        $tagitem = new PluginTagTagItem();
-                        $tagitem->showForTag($item);
-                        break;
-                }
+            case PluginTagTag::class:
+                /** @var PluginTagTag $item */
+                $tagitem = new PluginTagTagItem();
+                $tagitem->showForTag($item);
+                break;
         }
         return true;
     }
@@ -412,7 +421,6 @@ SQL;
                         'value'   => $values[$field]
                     ]
                 );
-             break;
         }
 
         return parent::getSpecificValueToSelect($field, $name, $values, $options);
@@ -513,7 +521,7 @@ SQL;
      *                          - itemtype The item type
      *                          - items_id The item's id
      *                          - content postKanbanContent content
-     * @return array Array of params passed in in addition to the new content.
+     * @return array|null Array of params passed in in addition to the new content.
      */
     public static function preKanbanContent($params = [])
     {
@@ -846,7 +854,7 @@ SQL;
     /**
      * Encode sub types
      *
-     * @param type $input
+     * @param array $input
      */
     public function encodeSubtypes($input)
     {
@@ -888,7 +896,7 @@ SQL;
     /**
      * Retrieve the current itemtype from the current page url
      *
-     * @return mixed(string/boolean) false if not itemtype found, the string itemtype if found
+     * @return false|string false if not itemtype found, the string itemtype if found
      */
     public static function getCurrentItemtype()
     {
